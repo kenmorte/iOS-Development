@@ -11,50 +11,44 @@ import Foundation
 
 class ViewController: UIViewController
 {
-    @IBOutlet weak var historyDisplay: UILabel!
+    @IBOutlet weak var descriptionLabel: UILabel!
     @IBOutlet weak var display: UILabel!
     var userIsInTheMiddleOfTyping = false
-    var historyList = Array<String>()
-    
-    let historyListMaxCount = 10
-    
     let model = CalculatorModel()
     
-    
-    @IBAction func debug() {
-        model.debug()
+    @IBAction func backspace() {
+        if let currentDisplay = display.text {
+            if !currentDisplay.isEmpty {
+                display.text = dropLast(currentDisplay)
+                
+                if display.text!.isEmpty {
+                    display.text = " "
+                    displ
+                }
+            }
+        }
     }
+
+    @IBAction func setVar() {
+        if let newVar = displayValue {
+            displayValue = model.setVariable("M", variable: newVar)
+        }
+        userIsInTheMiddleOfTyping = false
+        
+    }
+    
+    @IBAction func getVar() {
+        enter()
+        displayValue = model.pushOperand("M")
+    }
+
     
     @IBAction func clear() {
-        historyList.removeAll()
         model.clear()
+        model.variableValues = [String:Double]()
         display.text = "0"
-        historyDisplay.text = "None"
+        descriptionLabel.text = " "
         userIsInTheMiddleOfTyping = false
-    }
-    
-    
-    
-    func addToHistoryList(stringtoBeAdded : String) {
-        let lastIndex = historyList.count-1
-        
-        if userIsInTheMiddleOfTyping {
-            historyList[lastIndex] += stringtoBeAdded
-        } else {
-            historyList.append(stringtoBeAdded)
-        }
-        
-        if historyList.count == historyListMaxCount {
-            historyList.removeAtIndex(0)
-        }
-    }
-    
-    func historyListToString(historyArray : Array<String>) -> String {
-        var result = String()
-        for action in historyArray {
-            result += action + "  "
-        }
-        return result
     }
     
     @IBAction func appendDot() {
@@ -62,26 +56,17 @@ class ViewController: UIViewController
         if userIsInTheMiddleOfTyping {
             if displayDoesNotHaveDot {
                 display.text = display.text! + "."
-                addToHistoryList(".")
             }
         }
-        else{
+        else {
             display.text = "0."
-            addToHistoryList(" 0.")
         }
         userIsInTheMiddleOfTyping = true
         
     }
     
-    @IBAction func appendDigit(sender: UIButton) /* -> (return type) */ {
-        let digit = sender.currentTitle! // const local variable
-        
-        if digit == "∏" {
-            addToHistoryList("∏")
-        }
-        else {
-            addToHistoryList(digit)
-        }
+    @IBAction func appendDigit(sender: UIButton) {
+        let digit = sender.currentTitle!
         
         if userIsInTheMiddleOfTyping {
             if digit == "∏" {
@@ -108,8 +93,6 @@ class ViewController: UIViewController
         if userIsInTheMiddleOfTyping {
             enter()
         }
-        addToHistoryList(operationSign)
-        historyDisplay.text = historyListToString(historyList)
         if let operationSign = sender.currentTitle {
             if let result = model.performOperation(operationSign) {
                 displayValue = result
@@ -117,28 +100,17 @@ class ViewController: UIViewController
                 displayValue = nil
             }
         }
+        descriptionLabel.text = model.description + " ="
     }
-
-
-//    func performOperation (operation: (Double, Double) -> Double){
-//        if (operandStack.count >= 2){
-//            displayValue = operation(operandStack.removeLast(), operandStack.removeLast())
-//            enter()
-//        }
-//    }
-//    
-//    func performOperation (operation: Double -> Double){
-//        if (operandStack.count >= 1){
-//            displayValue = operation(operandStack.removeLast())
-//            enter()
-//        }
-//    }
     
     @IBAction func enter() {
         userIsInTheMiddleOfTyping = false
-        historyDisplay.text = historyListToString(historyList)
-        if let result = model.pushOperand(displayValue!) {
-            displayValue = result
+        if let result = displayValue {
+            if display.text == "\(M_PI)" {
+                displayValue = model.pushPi()
+            } else {
+                displayValue = model.pushOperand(result)
+            }
         } else {
             displayValue = nil
         }
@@ -146,7 +118,7 @@ class ViewController: UIViewController
     
     var displayValue : Double? {
         get{
-            if display.text! == "Insufficient" {
+            if display.text! == " " {
                 return 0
                 
             }
@@ -154,7 +126,7 @@ class ViewController: UIViewController
         }
         set{
             if newValue == nil {
-                display.text = "Insufficient"
+                display.text = " "
             } else {
                 display.text = "\(newValue!)"
             }
